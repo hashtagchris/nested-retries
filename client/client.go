@@ -5,9 +5,21 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+
+	"github.com/cenkalti/backoff/v4"
 )
 
+const retries = 2
+
 func GetDepth(port int) (int64, error) {
+	boff := backoff.WithMaxRetries(backoff.NewExponentialBackOff(), retries)
+
+	return backoff.RetryWithData(func() (int64, error) {
+		return do(port)
+	}, boff)
+}
+
+func do(port int) (int64, error) {
 	url := fmt.Sprintf("http://localhost:%d", port)
 
 	resp, err := http.Get(url)
@@ -15,8 +27,15 @@ func GetDepth(port int) (int64, error) {
 		return 0, err
 	}
 
-	if resp.StatusCode != 200 {
+	switch resp.StatusCode / 100 {
+	case 2:
+		// success!
+	case 5:
+		// retry on 5xx responses
 		return 0, fmt.Errorf("unexpected response code %d", resp.StatusCode)
+	default:
+		// don't retry on 3xx and 4xx responses
+		return 0, backoff.Permanent(fmt.Errorf("unexpected response code %d", resp.StatusCode))
 	}
 
 	defer resp.Body.Close()

@@ -10,20 +10,24 @@ import (
 )
 
 const startingPort = 8001
-const numberOfServers = 5
+const numberOfServers = 3
+const lastServerReturnsErr = true
+
+var servers []server.Server
 
 func main() {
 	port := startingPort
 
 	for i := 0; i < numberOfServers-1; i = i + 1 {
-		server := server.NewIntermediateServer(port, port+1)
-		go server.Run()
-
+		servers = append(servers, server.NewIntermediateServer(port, port+1))
 		port = port + 1
 	}
 
-	server := server.NewTerminalServer(port, false)
-	go server.Run()
+	servers = append(servers, server.NewTerminalServer(port, lastServerReturnsErr))
+
+	for _, server := range servers {
+		go server.Run()
+	}
 
 	makeRequests()
 }
@@ -39,8 +43,14 @@ func makeRequests() {
 		depth, err := client.GetDepth(startingPort)
 		if err != nil {
 			fmt.Printf("Error: %s\n", err)
-			continue
+		} else {
+			fmt.Printf("Success! Request depth: %d\n", depth)
 		}
-		fmt.Printf("Request depth: %d\n", depth)
+
+		fmt.Println()
+		for _, server := range servers {
+			server.LogRequestCount()
+			server.Reset()
+		}
 	}
 }

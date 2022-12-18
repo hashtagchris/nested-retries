@@ -5,30 +5,39 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 
 	"github.com/hashtagchris/nested-retries/client"
 )
+
+type Server interface {
+	Run()
+	LogRequestCount()
+	Reset()
+}
 
 type server struct {
 	addr           string
 	log            *log.Logger
 	nextServerPort int
 	errResp        bool
+	mu             sync.Mutex
+	count          int
 }
 
-func NewIntermediateServer(port, nextServerPort int) *server {
+func NewIntermediateServer(port, nextServerPort int) Server {
 	return newServer(port, nextServerPort, false)
 }
 
-func NewTerminalServer(port int, errResp bool) *server {
+func NewTerminalServer(port int, errResp bool) Server {
 	return newServer(port, 0, errResp)
 }
 
 func newServer(port, nextServerPort int, errResp bool) *server {
 	addr := fmt.Sprintf(":%d", port)
-	logger := log.New(os.Stderr, fmt.Sprintf("[%s] ", addr), log.Ltime)
+	logger := log.New(os.Stderr, fmt.Sprintf("[%s] ", addr), 0)
 
-	return &server{addr, logger, nextServerPort, errResp}
+	return &server{addr, logger, nextServerPort, errResp, sync.Mutex{}, 0}
 }
 
 func (s *server) Run() {
@@ -40,8 +49,23 @@ func (s *server) Run() {
 	s.log.Fatal(hs.ListenAndServe())
 }
 
+func (s *server) LogRequestCount() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.log.Printf("Requests received: %d", s.count)
+}
+
+func (s *server) Reset() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.count = 0
+}
+
 func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.log.Println("received request")
+	s.incrementCount()
 
 	var depth int64
 	if s.nextServerPort > 0 {
@@ -60,4 +84,11 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprint(w, depth)
+}
+
+func (s *server) incrementCount() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.count = s.count + 1
 }
