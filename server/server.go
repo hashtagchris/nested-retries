@@ -12,7 +12,7 @@ import (
 
 type Server interface {
 	Run()
-	LogRequestCount()
+	RequestCount() int
 	Reset()
 }
 
@@ -49,11 +49,11 @@ func (s *server) Run() {
 	s.log.Fatal(hs.ListenAndServe())
 }
 
-func (s *server) LogRequestCount() {
+func (s *server) RequestCount() int {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.log.Printf("Requests received: %d", s.count)
+	return s.count
 }
 
 func (s *server) Reset() {

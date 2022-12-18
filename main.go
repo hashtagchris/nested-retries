@@ -4,26 +4,29 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/hashtagchris/nested-retries/client"
 	"github.com/hashtagchris/nested-retries/server"
 )
 
 const startingPort = 8001
-const numberOfServers = 3
-const lastServerReturnsErr = true
+const intermediateServers = 2
+const terminalServerReturnsErr = true
 
 var servers []server.Server
+var terminalServer server.Server
 
 func main() {
 	port := startingPort
 
-	for i := 0; i < numberOfServers-1; i = i + 1 {
+	for i := 0; i < intermediateServers; i = i + 1 {
 		servers = append(servers, server.NewIntermediateServer(port, port+1))
 		port = port + 1
 	}
 
-	servers = append(servers, server.NewTerminalServer(port, lastServerReturnsErr))
+	terminalServer = server.NewTerminalServer(port, terminalServerReturnsErr)
+	servers = append(servers, terminalServer)
 
 	for _, server := range servers {
 		go server.Run()
@@ -40,17 +43,19 @@ func makeRequests() {
 		if !scanner.Scan() {
 			return
 		}
+
+		startAt := time.Now()
 		depth, err := client.GetDepth(startingPort)
+		elapsed := time.Since(startAt)
 		if err != nil {
 			fmt.Printf("Error: %s\n", err)
 		} else {
 			fmt.Printf("Success! Request depth: %d\n", depth)
 		}
 
+		fmt.Printf("Requests received by terminal server: %d\n", terminalServer.RequestCount())
+		terminalServer.Reset()
+		fmt.Printf("Elapsed sec: %d\n", int64(elapsed.Seconds()))
 		fmt.Println()
-		for _, server := range servers {
-			server.LogRequestCount()
-			server.Reset()
-		}
 	}
 }

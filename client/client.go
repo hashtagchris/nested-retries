@@ -9,7 +9,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 )
 
-const retries = 2
+const retries = 3
 
 func GetDepth(port int) (int64, error) {
 	boff := backoff.WithMaxRetries(backoff.NewExponentialBackOff(), retries)
