@@ -44,12 +44,12 @@ func do(ctx context.Context, port int) (int64, error) {
 
 	statusRange := resp.StatusCode / 100
 	if statusRange != 2 {
-		err := ResponseCodeError{resp.StatusCode, statusRange}
-		if statusRange == 5 {
-			return 0, err
-		} else {
-			return 0, backoff.Permanent(err)
+		var err error = ResponseCodeError{resp.StatusCode, statusRange}
+		// only retry on 5xx status codes
+		if statusRange != 5 {
+			err = backoff.Permanent(err)
 		}
+		return 0, err
 	}
 
 	defer resp.Body.Close()
