@@ -67,9 +67,11 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.log.Println("received request")
 	s.incrementCount()
 
+	ctx := r.Context()
+
 	var depth int64
 	if s.nextServerPort > 0 {
-		serverDepth, err := client.GetDepth(s.nextServerPort)
+		serverDepth, err := client.GetDepth(ctx, s.nextServerPort)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return

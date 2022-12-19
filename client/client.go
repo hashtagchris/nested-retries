@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -11,18 +12,24 @@ import (
 
 const retries = 3
 
-func GetDepth(port int) (int64, error) {
+func GetDepth(ctx context.Context, port int) (int64, error) {
 	boff := backoff.WithMaxRetries(backoff.NewExponentialBackOff(), retries)
+	boff = backoff.WithContext(boff, ctx)
 
 	return backoff.RetryWithData(func() (int64, error) {
-		return do(port)
+		return do(ctx, port)
 	}, boff)
 }
 
-func do(port int) (int64, error) {
+func do(ctx context.Context, port int) (int64, error) {
 	url := fmt.Sprintf("http://localhost:%d", port)
 
-	resp, err := http.Get(url)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
+	if err != nil {
+		return 0, err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return 0, err
 	}

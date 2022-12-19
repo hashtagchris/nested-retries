@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"time"
@@ -32,10 +33,10 @@ func main() {
 		go server.Run()
 	}
 
-	makeRequests()
+	makeRequests(context.Background())
 }
 
-func makeRequests() {
+func makeRequests(ctx context.Context) {
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		fmt.Println()
@@ -45,7 +46,7 @@ func makeRequests() {
 		}
 
 		startAt := time.Now()
-		depth, err := client.GetDepth(startingPort)
+		depth, err := client.GetDepth(ctx, startingPort)
 		elapsed := time.Since(startAt)
 		if err != nil {
 			fmt.Printf("Error: %s\n", err)
