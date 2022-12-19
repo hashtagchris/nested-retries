@@ -14,10 +14,10 @@ import (
 
 const startingPort = 8001
 const intermediateServers = 2
-const terminalServerStatusCode = http.StatusOK
 
 // let requests to the terminal server timeout, simulating extreme load
 const terminalServerTimeouts = true
+const terminalServerStatusCode = http.StatusOK
 
 var servers []server.Server
 var terminalServer server.Server
