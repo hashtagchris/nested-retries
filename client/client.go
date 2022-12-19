@@ -42,15 +42,14 @@ func do(ctx context.Context, port int) (int64, error) {
 		return 0, err
 	}
 
-	switch resp.StatusCode / 100 {
-	case 2:
-		// success!
-	case 5:
-		// retry on 5xx responses
-		return 0, fmt.Errorf("unexpected response code %d", resp.StatusCode)
-	default:
-		// don't retry on 3xx and 4xx responses
-		return 0, backoff.Permanent(fmt.Errorf("unexpected response code %d", resp.StatusCode))
+	statusRange := resp.StatusCode / 100
+	if statusRange != 2 {
+		err := ResponseCodeError{resp.StatusCode, statusRange}
+		if statusRange == 5 {
+			return 0, err
+		} else {
+			return 0, backoff.Permanent(err)
+		}
 	}
 
 	defer resp.Body.Close()

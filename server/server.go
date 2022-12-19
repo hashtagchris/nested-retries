@@ -1,6 +1,7 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -80,7 +81,13 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if s.nextServerPort > 0 {
 		serverDepth, err := client.GetDepth(ctx, s.nextServerPort)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			var respCodeErr client.ResponseCodeError
+			// propagate 4xx responses
+			if errors.As(err, &respCodeErr) && respCodeErr.StatusRange == 4 {
+				w.WriteHeader(respCodeErr.ResponseCode)
+			} else {
+				w.WriteHeader(http.StatusInternalServerError)
+			}
 			return
 		}
 		depth = serverDepth + 1
