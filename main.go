@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"net/http"
 	"os"
 	"time"
 
@@ -13,7 +14,7 @@ import (
 
 const startingPort = 8001
 const intermediateServers = 2
-const terminalServerErrs = false
+const terminalServerStatusCode = http.StatusOK
 
 // let requests to the terminal server timeout, simulating extreme load
 const terminalServerTimeouts = true
@@ -29,7 +30,7 @@ func main() {
 		port = port + 1
 	}
 
-	terminalServer = server.NewTerminalServer(port, terminalServerErrs, terminalServerTimeouts)
+	terminalServer = server.NewTerminalServer(port, terminalServerStatusCode, terminalServerTimeouts)
 	servers = append(servers, terminalServer)
 
 	for _, server := range servers {

@@ -21,8 +21,7 @@ type server struct {
 	addr           string
 	log            *log.Logger
 	nextServerPort int
-	// return 500 Internal Server responses
-	serverErrResp bool
+	statusCode     int
 	// let the request timeout to simulate a server under extreme load
 	reqTimeout bool
 	mu         sync.Mutex
@@ -30,18 +29,18 @@ type server struct {
 }
 
 func NewIntermediateServer(port, nextServerPort int) Server {
-	return newServer(port, nextServerPort, false, false)
+	return newServer(port, nextServerPort, http.StatusOK, false)
 }
 
-func NewTerminalServer(port int, serverErrResp, reqTimeout bool) Server {
-	return newServer(port, 0, serverErrResp, reqTimeout)
+func NewTerminalServer(port, statusCode int, reqTimeout bool) Server {
+	return newServer(port, 0, statusCode, reqTimeout)
 }
 
-func newServer(port, nextServerPort int, serverErrResp, reqTimeout bool) *server {
+func newServer(port, nextServerPort, statusCode int, reqTimeout bool) *server {
 	addr := fmt.Sprintf(":%d", port)
 	logger := log.New(os.Stderr, fmt.Sprintf("[%s] ", addr), log.Ltime)
 
-	return &server{addr, logger, nextServerPort, serverErrResp, reqTimeout, sync.Mutex{}, 0}
+	return &server{addr, logger, nextServerPort, statusCode, reqTimeout, sync.Mutex{}, 0}
 }
 
 func (s *server) ID() string {
@@ -85,9 +84,6 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		depth = serverDepth + 1
-	} else if s.serverErrResp {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
 	} else {
 		if s.reqTimeout {
 			<-ctx.Done()
@@ -96,7 +92,7 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		depth = 1
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(s.statusCode)
 	fmt.Fprint(w, depth)
 }
 
