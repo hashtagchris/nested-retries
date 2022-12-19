@@ -54,8 +54,10 @@ func makeRequests(ctx context.Context) {
 			fmt.Printf("Success! Request depth: %d\n", depth)
 		}
 
-		fmt.Printf("Requests received by terminal server: %d\n", terminalServer.RequestCount())
-		terminalServer.Reset()
+		for _, server := range servers {
+			fmt.Printf("Requests received by %s server: %d\n", server.ID(), server.RequestCount())
+			server.Reset()
+		}
 		fmt.Printf("Elapsed sec: %d\n", int64(elapsed.Seconds()))
 		fmt.Println()
 	}

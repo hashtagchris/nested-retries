@@ -6,23 +6,31 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/cenkalti/backoff/v4"
 )
 
 const retries = 3
+const timeout = 10 * time.Second
 
 func GetDepth(ctx context.Context, port int) (int64, error) {
-	boff := backoff.WithMaxRetries(backoff.NewExponentialBackOff(), retries)
+	exp := backoff.NewExponentialBackOff()
+	boff := backoff.WithMaxRetries(exp, retries)
 	boff = backoff.WithContext(boff, ctx)
 
-	return backoff.RetryWithData(func() (int64, error) {
+	return backoff.RetryNotifyWithData(func() (int64, error) {
 		return do(ctx, port)
-	}, boff)
+	}, boff, notify)
 }
 
 func do(ctx context.Context, port int) (int64, error) {
 	url := fmt.Sprintf("http://localhost:%d", port)
+
+	// Use a 10 second timeout for the http request
+	// Another option is to set the response header timeout on the transport
+	ctx, cancelFunc := context.WithTimeout(ctx, timeout)
+	defer cancelFunc()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
@@ -57,4 +65,8 @@ func do(ctx context.Context, port int) (int64, error) {
 	}
 
 	return depth, nil
+}
+
+func notify(err error, dur time.Duration) {
+	// log.Printf("Error: %s, Duration: %s", err, dur)
 }

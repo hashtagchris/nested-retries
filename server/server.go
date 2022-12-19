@@ -11,6 +11,7 @@ import (
 )
 
 type Server interface {
+	ID() string
 	Run()
 	RequestCount() int
 	Reset()
@@ -35,9 +36,13 @@ func NewTerminalServer(port int, errResp bool) Server {
 
 func newServer(port, nextServerPort int, errResp bool) *server {
 	addr := fmt.Sprintf(":%d", port)
-	logger := log.New(os.Stderr, fmt.Sprintf("[%s] ", addr), 0)
+	logger := log.New(os.Stderr, fmt.Sprintf("[%s] ", addr), log.Ltime)
 
 	return &server{addr, logger, nextServerPort, errResp, sync.Mutex{}, 0}
+}
+
+func (s *server) ID() string {
+	return s.addr
 }
 
 func (s *server) Run() {
