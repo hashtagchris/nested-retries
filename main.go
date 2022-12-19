@@ -13,7 +13,10 @@ import (
 
 const startingPort = 8001
 const intermediateServers = 2
-const terminalServerReturnsErr = true
+const terminalServerErrs = false
+
+// let requests to the terminal server timeout, simulating extreme load
+const terminalServerTimeouts = true
 
 var servers []server.Server
 var terminalServer server.Server
@@ -26,7 +29,7 @@ func main() {
 		port = port + 1
 	}
 
-	terminalServer = server.NewTerminalServer(port, terminalServerReturnsErr)
+	terminalServer = server.NewTerminalServer(port, terminalServerErrs, terminalServerTimeouts)
 	servers = append(servers, terminalServer)
 
 	for _, server := range servers {
