@@ -14,18 +14,26 @@ import (
 const retries = 3
 const timeout = 10 * time.Second
 
-func GetDepth(ctx context.Context, port int) (int64, error) {
+func GetDepth(ctx context.Context, port int, requestChain string) (int64, error) {
 	exp := backoff.NewExponentialBackOff()
 	boff := backoff.WithMaxRetries(exp, retries)
 	boff = backoff.WithContext(boff, ctx)
 
+	attempt := 0
 	return backoff.RetryNotifyWithData(func() (int64, error) {
-		return do(ctx, port)
+		attempt++
+		rc := requestChain
+		if rc != "" {
+			rc += "."
+		}
+		rc += strconv.Itoa(attempt)
+
+		return do(ctx, port, rc)
 	}, boff, notify)
 }
 
-func do(ctx context.Context, port int) (int64, error) {
-	url := fmt.Sprintf("http://localhost:%d", port)
+func do(ctx context.Context, port int, requestChain string) (int64, error) {
+	url := fmt.Sprintf("http://localhost:%d?requestChain=%s", port, requestChain)
 
 	// Use a 10 second timeout for the http request
 	// Another option is to set the response header timeout on the transport

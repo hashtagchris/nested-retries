@@ -50,7 +50,7 @@ func makeRequests(ctx context.Context) {
 		}
 
 		startAt := time.Now()
-		depth, err := client.GetDepth(ctx, startingPort)
+		depth, err := client.GetDepth(ctx, startingPort, "")
 		elapsed := time.Since(startAt)
 		if err != nil {
 			fmt.Printf("Error: %s\n", err)

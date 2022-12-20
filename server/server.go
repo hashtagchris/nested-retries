@@ -72,14 +72,16 @@ func (s *server) Reset() {
 }
 
 func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	s.log.Println("received request")
+	requestChain := r.URL.Query().Get("requestChain")
+
+	s.log.Printf("received request %s\n", requestChain)
 	s.incrementCount()
 
 	ctx := r.Context()
 
 	var depth int64
 	if s.nextServerPort > 0 {
-		serverDepth, err := client.GetDepth(ctx, s.nextServerPort)
+		serverDepth, err := client.GetDepth(ctx, s.nextServerPort, requestChain)
 		if err != nil {
 			var respCodeErr client.ResponseCodeError
 			// propagate 4xx responses
