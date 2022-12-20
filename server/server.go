@@ -74,8 +74,8 @@ func (s *server) Reset() {
 func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	requestChain := r.URL.Query().Get("requestChain")
 
-	s.log.Printf("received request %s\n", requestChain)
-	s.incrementCount()
+	rc := s.incrementCount()
+	s.log.Printf("received request %s (request #%d)\n", requestChain, rc)
 
 	ctx := r.Context()
 
@@ -105,9 +105,10 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, depth)
 }
 
-func (s *server) incrementCount() {
+func (s *server) incrementCount() int {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	s.count = s.count + 1
+	s.count++
+	return s.count
 }

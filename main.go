@@ -25,7 +25,7 @@ var terminalServer server.Server
 func main() {
 	port := startingPort
 
-	for i := 0; i < intermediateServers; i = i + 1 {
+	for i := 0; i < intermediateServers; i++ {
 		servers = append(servers, server.NewIntermediateServer(port, port+1))
 		port = port + 1
 	}
@@ -43,7 +43,9 @@ func main() {
 func makeRequests(ctx context.Context) {
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
-		fmt.Println()
+		for _, server := range servers {
+			server.Reset()
+		}
 		fmt.Println("Hit enter to make a http request")
 		if !scanner.Scan() {
 			return
@@ -56,11 +58,6 @@ func makeRequests(ctx context.Context) {
 			fmt.Printf("Error: %s\n", err)
 		} else {
 			fmt.Printf("Success! Request depth: %d\n", depth)
-		}
-
-		for _, server := range servers {
-			fmt.Printf("Requests received by %s server: %d\n", server.ID(), server.RequestCount())
-			server.Reset()
 		}
 		fmt.Printf("Elapsed sec: %d\n", int64(elapsed.Seconds()))
 		fmt.Println()
